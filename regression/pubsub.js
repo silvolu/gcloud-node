@@ -149,7 +149,7 @@ describe('Subscription', function() {
     }, done);
   });
 
-  it('should be able to pull and ack', function(done) {
+  it.skip('should be able to pull and ack', function(done) {
     conn.getTopic('topic1', function(err, topic) {
       if (err) {
         done(err); return;
