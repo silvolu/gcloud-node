@@ -1,9 +1,9 @@
 angular
-  .module('gcloud.docs', ['ngRoute', 'hljs'])
-  .config(function($routeProvider) {
+  .module('gcloud.docs', ['ngRoute', 'hljs', 'config'])
+  .config(function($routeProvider, versions) {
     'use strict';
 
-    function filterDocJson($sce) {
+    function filterDocJson($sce, version) {
       // Transform JSON response to remove extraneous objects, such as copyright
       // notices & use strict directives.
       function formatHtml(str) {
@@ -42,7 +42,7 @@ angular
         };
         var a = document.createElement('a');
         return str.replace(regex.see, function(match, module) {
-          a.href = '/gcloud-node/#/docs/' + module;
+          a.href = '#/docs/' + version + '/' + module;
           a.innerText = module;
           return a.outerHTML;
         });
@@ -100,62 +100,138 @@ angular
       };
     }
 
+    function setMethod($location, methodName, version) {
+      return function(methods) {
+        var methodExists = methods.some(function(methodObj) {
+          return methodName === methodObj.name;
+        });
+        if (methodExists) {
+          methods.singleMethod = methodName;
+          return methods;
+        } else {
+          $location.path('/docs/' + version + '/' + module + '/' + cl);
+        }
+      };
+    }
+
+    var MODULE_TO_CLASSES = {
+      datastore: ['dataset', 'query'],
+      storage: []
+    };
+
     $routeProvider
       .when('/docs', {
-        controller: 'DocsCtrl',
-        templateUrl: '/gcloud-node/components/docs/docs.html',
-        resolve: {
-          methods: function($http, $sce) {
-            return $http.get('/gcloud-node/json/index.json')
-                .then(filterDocJson($sce));
-          }
-        }
+        redirectTo: '/docs/' + versions[0]
       })
-      .when('/docs/:module', {
+      .when('/docs/history', {
+        controller: 'HistoryCtrl',
+        templateUrl: 'components/docs/docs.html'
+      })
+      .when('/docs/:version', {
         controller: 'DocsCtrl',
-        templateUrl: '/gcloud-node/components/docs/docs.html',
+        templateUrl: 'components/docs/docs.html',
         resolve: {
           methods: function($http, $route, $sce) {
-            var module = $route.current.params.module;
-            return $http.get('/gcloud-node/json/' + module + '/index.json')
-                .then(filterDocJson($sce));
+            var version = $route.current.params.version;
+            return $http.get('json/' + version + '/index.json')
+                .then(filterDocJson($sce, version))
+                .then(function(methods) {
+                  // Prevent displaying permalinks.
+                  // ** Can remove when PubSub api is documented **
+                  methods.noPermalink = true;
+                  return methods;
+                });
           }
         }
       })
-      .when('/docs/:module/:class', {
+      .when('/docs/:version/:module', {
         controller: 'DocsCtrl',
-        templateUrl: '/gcloud-node/components/docs/docs.html',
+        templateUrl: 'components/docs/docs.html',
         resolve: {
-          methods: function($q, $http, $route, $sce) {
+          methods: function($http, $route, $sce) {
+            var version = $route.current.params.version;
+            var module = $route.current.params.module;
+            return $http.get('json/' + version + '/' + module + '/index.json')
+                .then(filterDocJson($sce, version));
+          }
+        }
+      })
+      .when('/docs/:version/:module/:class', {
+        controller: 'DocsCtrl',
+        templateUrl: 'components/docs/docs.html',
+        resolve: {
+          methods: function($q, $http, $route, $sce, $location) {
+            var version = $route.current.params.version;
             var module = $route.current.params.module;
             var cl = $route.current.params.class;
-            return $http.get('/gcloud-node/json/' + module + '/' + cl + '.json')
-                .then(filterDocJson($sce));
+            if (MODULE_TO_CLASSES[module].length > 0) {
+              return $http
+                  .get('json/' + version + '/' + module + '/' + cl + '.json')
+                  .then(filterDocJson($sce, version));
+            } else {
+              // This is not a class, this is the name of a method.
+              var method = cl;
+              return $http.get('json/' + version + '/' +module + '/index.json')
+                  .then(filterDocJson($sce, version))
+                  .then(setMethod($location, method, version));
+            }
+          }
+        }
+      })
+      .when('/docs/:version/:module/:class/:method', {
+        controller: 'DocsCtrl',
+        templateUrl: 'components/docs/docs.html',
+        resolve: {
+          methods: function($q, $http, $route, $sce, $location) {
+            var version = $route.current.params.version;
+            var module = $route.current.params.module;
+            var cl = $route.current.params.class;
+            var method = $route.current.params.method;
+            return $http.get('json/' + version + '/' + module + '/' + cl + '.json')
+                .then(filterDocJson($sce, version))
+                .then(setMethod($location, method, version));
           }
         }
       });
   })
-  .controller('DocsCtrl', function($location, $scope, $routeParams, methods) {
+  .controller('DocsCtrl', function($location, $scope, $routeParams, methods, $http, versions) {
     'use strict';
 
     $scope.isActiveUrl = function(url) {
-      return url.replace(/^\/gcloud-node\/#/, '') === $location.path();
+      var current = $location.path().replace('/' + methods.singleMethod, '');
+      var link = url
+          .replace(/^#/, '')
+          .replace('/' + methods.singleMethod, '');
+      return current === link;
     };
 
     $scope.isActiveDoc = function(doc) {
       return doc.toLowerCase() === $routeParams.module;
     };
 
+    $scope.pageTitle = 'Node.js';
+    $scope.showReference = true;
+    $scope.activeUrl = '#' + $location.path();
+    $scope.singleMethod = methods.singleMethod;
+    $scope.noPermalink = methods.singleMethod || methods.noPermalink;
     $scope.methods = methods;
     $scope.module = $routeParams.module;
+    $scope.version = $routeParams.version;
+    $scope.isLatestVersion = $scope.version == versions[0];
+    $scope.versions = versions;
+    var baseUrl = '#/docs/' + $scope.version;
+    /*
+    TODO(silvano): future versions will introduce new pages, so the list below will have
+    to be generated according to the specific version
+    */
     $scope.pages = [
       {
         title: 'gcloud',
-        url: '/gcloud-node/#/docs'
+        url: baseUrl
       },
       {
         title: 'Datastore',
-        url: '/gcloud-node/#/docs/datastore',
+        url: baseUrl + '/datastore',
         pages: [
           {
             title: 'Dataset',
@@ -169,7 +245,12 @@ angular
       },
       {
         title: 'Storage',
-        url: '/gcloud-node/#/docs/storage'
+        url: baseUrl + '/storage'
       }
     ];
+  })
+  .controller("HistoryCtrl", function($scope, versions) {
+    $scope.pageTitle = 'Node.js Docs Versions';
+    $scope.showHistory = true;
+    $scope.versions = versions;
   });

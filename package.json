@@ -1,28 +1,12 @@
 {
-  "name": "gcloud",
-  "version": "0.4.0",
-  "author": "Google Inc.",
+  "name": "silvano-tests-gcloud",
+  "version": "0.2.0",
+  "author": "silvano",
   "description": "Google Cloud APIs Client Library for Node.js",
   "contributors": [
     {
-      "name": "Burcu Dogan",
-      "email": "jbd@google.com"
-    },
-    {
-      "name": "Johan Euphrosine",
-      "email": "proppy@google.com"
-    },
-    {
-      "name": "Patrick Costello",
-      "email": "pcostell@google.com"
-    },
-    {
       "name": "Silvano Luciani",
       "email": "silvano@google.com"
-    },
-    {
-      "name": "Stephen Sawchuk",
-      "email": "sawchuk@gmail.com"
     }
   ],
   "main": "./lib/index",
@@ -32,7 +16,7 @@
     "CONTRIBUTORS",
     "COPYING"
   ],
-  "repository": "googlecloudplatform/gcloud-nodejs",
+  "repository": "silvolu/gcloud-nodejs",
   "keywords": [
     "google",
     "api",
@@ -62,7 +46,7 @@
     "tmp": "0.0.24"
   },
   "scripts": {
-    "docs": "dox < lib/index.js > docs/json/index.json & dox < lib/datastore/dataset.js > docs/json/datastore/dataset.json & dox < lib/datastore/index.js > docs/json/datastore/index.json & dox < lib/datastore/query.js > docs/json/datastore/query.json & dox < lib/storage/index.js > docs/json/storage/index.json",
+    "docs": "dox < lib/index.js > docs/json/development/index.json & dox < lib/datastore/dataset.js > docs/json/development/datastore/dataset.json & dox < lib/datastore/index.js > docs/json/development/datastore/index.json & dox < lib/datastore/query.js > docs/json/development/datastore/query.json & dox < lib/storage/index.js > docs/json/development/storage/index.json",
     "lint": "jshint lib/ regression/ test/",
     "test": "mocha --recursive --reporter spec",
     "regression-test": "mocha regression/datastore.js regression/storage.js --reporter spec --timeout 15000",
