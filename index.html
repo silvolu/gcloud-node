@@ -35,7 +35,8 @@
         var $http = initInjector.get('$http');
         $http.get('versions.txt').then(
           function (response) {
-            var versions = response.data.split("\n").reverse();
+            var trimmed = response.data.replace(/^\s+|\s+$/g, '');
+            var versions = trimmed.split("\n").reverse();
             angular.module('config', []).constant('versions', versions);
             angular.element(document).ready(function() {
               angular.bootstrap(document, ['gcloud']);
